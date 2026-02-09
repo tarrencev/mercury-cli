@@ -16,6 +16,7 @@ This repo includes an asdf plugin so you can install published release binaries:
 ```bash
 asdf plugin add mercury-cli https://github.com/tarrencev/mercury-cli.git
 asdf list all mercury-cli
+asdf install mercury-cli latest
 asdf install mercury-cli <version>
 asdf global mercury-cli <version>
 
