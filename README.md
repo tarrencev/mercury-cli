@@ -9,6 +9,20 @@ go build ./...
 go build -o mercury .
 ```
 
+## Install With asdf
+
+This repo includes an asdf plugin so you can install published release binaries:
+
+```bash
+asdf plugin add mercury-cli https://github.com/tarrencev/mercury-cli.git
+asdf list all mercury-cli
+asdf install mercury-cli latest
+asdf install mercury-cli <version>
+asdf global mercury-cli <version>
+
+mercury version
+```
+
 ## Auth
 
 By default, secured endpoints require a token:
@@ -84,3 +98,6 @@ mercury spec update
 ./bin/spec-update
 ```
 
+## Releases
+
+Tag a release like `v0.1.0` to build and publish cross-platform binaries via GitHub Actions.

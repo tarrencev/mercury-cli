@@ -54,13 +54,7 @@ func bindParams(cmd *cobra.Command, spec *openapi.Spec, params []openapi.Paramet
 		}
 
 		kind := detectParamKind(spec, &p)
-		desc := p.Description
-		if desc == "" {
-			desc = fmt.Sprintf("%s parameter %q", where, p.Name)
-		}
-		if p.Required {
-			desc += " (required)"
-		}
+		desc := buildParamHelp(spec, &p, where, kind)
 
 		binding := &paramBinding{
 			param:     p,
@@ -113,9 +107,81 @@ func bindParams(cmd *cobra.Command, spec *openapi.Spec, params []openapi.Paramet
 			}
 		}
 
+		if p.Required {
+			_ = cmd.MarkFlagRequired(primary)
+		}
+
 		out = append(out, binding)
 	}
 	return out, nil
+}
+
+func buildParamHelp(spec *openapi.Spec, p *openapi.Parameter, where string, kind paramKind) string {
+	if p == nil {
+		return ""
+	}
+
+	desc := strings.TrimSpace(p.Description)
+	if desc == "" && spec != nil && p.Schema != nil {
+		s := spec.FlattenSchema(p.Schema)
+		if s != nil {
+			desc = strings.TrimSpace(s.Description)
+		}
+	}
+
+	typeHint := paramTypeHint(spec, p)
+	loc := strings.ToLower(where)
+
+	if desc == "" {
+		desc = fmt.Sprintf("%s parameter", titleFirst(loc))
+		if typeHint != "" {
+			desc += fmt.Sprintf(" (%s)", typeHint)
+		}
+		return desc
+	}
+
+	// Add a little extra context for repeatable flags.
+	if kind == kindStringArray {
+		desc += " (repeatable)"
+	}
+	return desc
+}
+
+func paramTypeHint(spec *openapi.Spec, p *openapi.Parameter) string {
+	if spec == nil || p == nil || p.Schema == nil {
+		return ""
+	}
+	s := spec.FlattenSchema(p.Schema)
+	if s == nil {
+		return ""
+	}
+
+	typ := strings.TrimSpace(s.Type)
+	if strings.EqualFold(typ, "array") && s.Items != nil {
+		item := spec.FlattenSchema(s.Items)
+		if item != nil && item.Type != "" {
+			typ = strings.TrimSpace(item.Type) + "[]"
+			if item.Format != "" {
+				return typ + " (" + strings.TrimSpace(item.Format) + ")"
+			}
+			return typ
+		}
+	}
+
+	if typ == "" {
+		return ""
+	}
+	if s.Format != "" {
+		return typ + " (" + strings.TrimSpace(s.Format) + ")"
+	}
+	return typ
+}
+
+func titleFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 func detectParamKind(spec *openapi.Spec, p *openapi.Parameter) paramKind {

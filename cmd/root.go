@@ -116,8 +116,19 @@ func NewRootCmd() (*cobra.Command, error) {
 	}
 
 	root := &cobra.Command{
-		Use:           "mercury",
-		Short:         "Mercury Bank API CLI",
+		Use:   "mercury",
+		Short: "Mercury Bank API CLI",
+		Long: "Mercury Bank API CLI.\n\n" +
+			"This CLI is generated from Mercury's published OpenAPI specs.\n\n" +
+			"Authentication:\n" +
+			"  export MERCURY_TOKEN=\"...\"\n" +
+			"  mercury accounts get-accounts\n\n" +
+			"Common usage:\n" +
+			"  mercury <group> <operation> [path-args...] [--query/--header flags]\n\n" +
+			"Examples:\n" +
+			"  mercury accounts get-accounts --limit 100\n" +
+			"  mercury accounts get-accounts --all\n" +
+			"  mercury recipients create-recipient --data @recipient.json\n",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

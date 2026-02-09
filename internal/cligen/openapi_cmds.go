@@ -24,9 +24,10 @@ type genOp struct {
 	path   string
 	op     *openapi.Operation
 
-	tag       string
-	groupName string
-	cmdName   string
+	tag            string
+	tagDescription string
+	groupName      string
+	cmdName        string
 }
 
 func AddOpenAPICommands(root *cobra.Command, docs []*openapi.SpecDoc) error {
@@ -36,6 +37,13 @@ func AddOpenAPICommands(root *cobra.Command, docs []*openapi.SpecDoc) error {
 			continue
 		}
 		spec := doc.Spec
+		tagDescriptions := map[string]string{}
+		for _, t := range spec.Tags {
+			if strings.TrimSpace(t.Name) == "" {
+				continue
+			}
+			tagDescriptions[t.Name] = strings.TrimSpace(t.Description)
+		}
 
 		paths := make([]string, 0, len(spec.Paths))
 		for p := range spec.Paths {
@@ -71,14 +79,15 @@ func AddOpenAPICommands(root *cobra.Command, docs []*openapi.SpecDoc) error {
 				}
 
 				ops = append(ops, genOp{
-					specDocName: doc.Name,
-					spec:        spec,
-					method:      method,
-					path:        p,
-					op:          op,
-					tag:         tag,
-					groupName:   groupName,
-					cmdName:     kebabCase(op.OperationID),
+					specDocName:    doc.Name,
+					spec:           spec,
+					method:         method,
+					path:           p,
+					op:             op,
+					tag:            tag,
+					tagDescription: tagDescriptions[tag],
+					groupName:      groupName,
+					cmdName:        kebabCase(op.OperationID),
 				})
 			}
 		}
@@ -103,9 +112,13 @@ func AddOpenAPICommands(root *cobra.Command, docs []*openapi.SpecDoc) error {
 	for _, g := range ops {
 		group := groupCmds[g.groupName]
 		if group == nil {
+			short := strings.TrimSpace(g.tagDescription)
+			if short == "" {
+				short = g.tag
+			}
 			group = &cobra.Command{
 				Use:           g.groupName,
-				Short:         g.tag,
+				Short:         short,
 				SilenceUsage:  true,
 				SilenceErrors: true,
 			}
@@ -149,7 +162,7 @@ func buildOperationCmd(g genOp) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:           use,
 		Short:         short,
-		Long:          strings.TrimSpace(op.Description),
+		Long:          buildLongHelp(op, g.method, g.path),
 		Args:          cobra.ExactArgs(len(pathParams)),
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -353,6 +366,21 @@ func buildOperationCmd(g genOp) (*cobra.Command, error) {
 	}
 
 	return cmd, nil
+}
+
+func buildLongHelp(op *openapi.Operation, method string, path string) string {
+	desc := ""
+	if op != nil {
+		desc = strings.TrimSpace(op.Description)
+	}
+	httpLine := fmt.Sprintf("HTTP %s %s", strings.ToUpper(method), path)
+	if desc == "" {
+		if op != nil && strings.TrimSpace(op.Summary) != "" {
+			return strings.TrimSpace(op.Summary) + "\n\n" + httpLine
+		}
+		return httpLine
+	}
+	return desc + "\n\n" + httpLine
 }
 
 func jsonResponseSchema(spec *openapi.Spec, op *openapi.Operation, statusCode string) *openapi.Schema {

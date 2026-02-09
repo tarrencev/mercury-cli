@@ -94,15 +94,18 @@ type MediaType struct {
 }
 
 type Schema struct {
-	Ref        string            `json:"$ref,omitempty"`
-	Type       string            `json:"type,omitempty"`
-	Format     string            `json:"format,omitempty"`
-	Nullable   bool              `json:"nullable,omitempty"`
-	Enum       []any             `json:"enum,omitempty"`
-	Items      *Schema           `json:"items,omitempty"`
-	Properties map[string]Schema `json:"properties,omitempty"`
-	Required   []string          `json:"required,omitempty"`
-	AllOf      []*Schema         `json:"allOf,omitempty"`
-	AnyOf      []*Schema         `json:"anyOf,omitempty"`
-	OneOf      []*Schema         `json:"oneOf,omitempty"`
+	Ref         string            `json:"$ref,omitempty"`
+	Description string            `json:"description,omitempty"`
+	Type        string            `json:"type,omitempty"`
+	Format      string            `json:"format,omitempty"`
+	Nullable    bool              `json:"nullable,omitempty"`
+	Default     any               `json:"default,omitempty"`
+	Example     any               `json:"example,omitempty"`
+	Enum        []any             `json:"enum,omitempty"`
+	Items       *Schema           `json:"items,omitempty"`
+	Properties  map[string]Schema `json:"properties,omitempty"`
+	Required    []string          `json:"required,omitempty"`
+	AllOf       []*Schema         `json:"allOf,omitempty"`
+	AnyOf       []*Schema         `json:"anyOf,omitempty"`
+	OneOf       []*Schema         `json:"oneOf,omitempty"`
 }

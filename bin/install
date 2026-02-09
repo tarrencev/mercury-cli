@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[ "${BASH_VERSINFO[0]:-0}" -ge 3 ] && set -o pipefail
+
+fail() {
+  echo "asdf-mercury-cli: $*" >&2
+  exit 1
+}
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
+}
+
+need curl
+need tar
+
+repo="${ASDF_PLUGIN_SOURCE_URL:-https://github.com/tarrencev/mercury-cli.git}"
+repo="${repo%.git}"
+
+version="${ASDF_INSTALL_VERSION:-}"
+install_path="${ASDF_INSTALL_PATH:-}"
+
+[ -n "$version" ] || fail "ASDF_INSTALL_VERSION is not set"
+[ -n "$install_path" ] || fail "ASDF_INSTALL_PATH is not set"
+
+# Accept both "vX.Y.Z" and "X.Y.Z".
+version="${version#v}"
+tag="v${version}"
+
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+case "$os" in
+  linux*) os="linux" ;;
+  darwin*) os="darwin" ;;
+  msys*|mingw*|cygwin*) os="windows" ;;
+  *) fail "unsupported OS: $os" ;;
+esac
+
+arch="$(uname -m)"
+case "$arch" in
+  x86_64|amd64) arch="amd64" ;;
+  aarch64|arm64) arch="arm64" ;;
+  *) fail "unsupported architecture: $arch" ;;
+esac
+
+name="mercury_${version}_${os}_${arch}"
+ext="tar.gz"
+if [ "$os" = "windows" ]; then
+  ext="zip"
+  need unzip
+fi
+
+url="${repo}/releases/download/${tag}/${name}.${ext}"
+checksums_url="${repo}/releases/download/${tag}/checksums.txt"
+
+tmp="${ASDF_DOWNLOAD_PATH:-}"
+cleanup_tmp="0"
+if [ -z "$tmp" ]; then
+  tmp="$(mktemp -dt asdf-mercury-cli.XXXX)"
+  cleanup_tmp="1"
+fi
+
+archive="${tmp}/${name}.${ext}"
+checksums="${tmp}/checksums.txt"
+
+echo "Downloading ${url}" >&2
+curl -fsSL "$url" -o "$archive"
+
+echo "Downloading ${checksums_url}" >&2
+curl -fsSL "$checksums_url" -o "$checksums" || true
+
+expected=""
+if [ -f "$checksums" ]; then
+  expected="$(grep -E " ${name}\\.${ext}\$" "$checksums" | awk '{print $1}' | head -n 1 || true)"
+fi
+
+if [ -n "$expected" ]; then
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual="$(sha256sum "$archive" | awk '{print $1}')"
+  elif command -v shasum >/dev/null 2>&1; then
+    actual="$(shasum -a 256 "$archive" | awk '{print $1}')"
+  else
+    actual=""
+  fi
+
+  if [ -n "$actual" ] && [ "$expected" != "$actual" ]; then
+    fail "checksum mismatch for ${name}.${ext}"
+  fi
+fi
+
+mkdir -p "${install_path}/bin"
+
+if [ "$ext" = "zip" ]; then
+  unzip -q "$archive" -d "${install_path}/bin"
+else
+  tar -xzf "$archive" -C "${install_path}/bin"
+fi
+
+[ -f "${install_path}/bin/mercury" ] || [ -f "${install_path}/bin/mercury.exe" ] || fail "installed binary not found in ${install_path}/bin"
+
+chmod +x "${install_path}/bin/mercury" 2>/dev/null || true
+chmod +x "${install_path}/bin/mercury.exe" 2>/dev/null || true
+
+if [ "$cleanup_tmp" = "1" ]; then
+  rm -rf "$tmp"
+fi
+
