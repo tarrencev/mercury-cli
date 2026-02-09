@@ -95,6 +95,14 @@ else
   tar -xzf "$archive" -C "${install_path}/bin"
 fi
 
+# Some release archives wrap contents in a directory; move the binary into bin/ if needed.
+if [ ! -f "${install_path}/bin/mercury" ] && [ ! -f "${install_path}/bin/mercury.exe" ]; then
+  found="$(find "${install_path}/bin" -maxdepth 3 -type f \( -name mercury -o -name mercury.exe \) | head -n 1 || true)"
+  if [ -n "$found" ]; then
+    mv "$found" "${install_path}/bin/"
+  fi
+fi
+
 [ -f "${install_path}/bin/mercury" ] || [ -f "${install_path}/bin/mercury.exe" ] || fail "installed binary not found in ${install_path}/bin"
 
 chmod +x "${install_path}/bin/mercury" 2>/dev/null || true
@@ -103,4 +111,3 @@ chmod +x "${install_path}/bin/mercury.exe" 2>/dev/null || true
 if [ "$cleanup_tmp" = "1" ]; then
   rm -rf "$tmp"
 fi
-
