@@ -1,6 +1,8 @@
 # Build outputs
 /mercury
 /mercury.exe
+/mercury-cli
+/dist/
 *.test
 *.out
 coverage.out
@@ -9,4 +11,3 @@ coverage.out
 .DS_Store
 .idea/
 .vscode/
-
