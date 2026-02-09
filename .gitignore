@@ -1,0 +1,12 @@
+# Build outputs
+/mercury
+/mercury.exe
+*.test
+*.out
+coverage.out
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
+
