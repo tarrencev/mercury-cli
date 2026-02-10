@@ -42,8 +42,8 @@ fi
 # Prefer stable versions (no prerelease suffix).
 mapfile -t versions < <("$plugin_dir/bin/list-all" \
   | tr ' ' '\n' \
-  | sed 's/^[[:space:]]\\+//' \
-  | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+$' \
+  | sed 's/^[[:space:]]\+//' \
+  | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
   | { sort -V 2>/dev/null || sort; })
 
 if [ -n "$prefix" ]; then
@@ -65,4 +65,3 @@ for ((i=${#versions[@]}-1; i>=0; i--)); do
 done
 
 exit 1
-
